@@ -318,19 +318,25 @@ def measure(text: str, before: dict, after: dict) -> dict:
 
 
 def check(text: str, before: dict, after: dict, now: int = 0,
-          want: float | None = None) -> list[str]:
+          want: float | None = None, tune: dict | None = None) -> list[str]:
     """옅어진 자리만 사람 말로 돌려준다."""
     m = measure(text, before, after)
+    # **자를 갈래가 조절한다.** 대사 관련 자(주고받기 · 긴 대사 · 아주 긴 대사)는
+    # 갈래 가정이었다 -- 서술이 이야기를 끄는 갈래에서는 상대가 아예 없는 대목이
+    # 흔한데, 그것을 벌하면 좋은 글이 낙제한다(실측: 직장물 표본이 여덟 군데 걸렸다).
+    lim = dict(LIMITS)
+    lim.update((tune or {}).get("자", {}))
+
     old = props(before)
     out = []
 
-    if m["new"] < LIMITS["new"]:
+    if m["new"] < lim["new"]:
         out.append(f"이 덩어리가 세계에 더한 것이 {m['new']}개뿐이다. "
                    f"{LIMITS['new']}개는 넘겨라 -- 새 사람, 새 장소, 새 물건, 새 사실. "
                    f"**이름을 붙이고, 그것이 무언가를 하게 해라.** 설명만 하지 말고 세계를 늘려라")
 
     # 되돌아옴은 **되돌아올 것이 쌓인 뒤에만** 따진다. 첫 덩어리에 회수를 요구할 수는 없다.
-    if len(old) >= 4 and m["back"] < LIMITS["back"]:
+    if len(old) >= 4 and m["back"] < lim["back"]:
         fuel = cold(before, text, now)
         out.append(f"앞에서 나온 것 중 이 덩어리가 다시 만진 것이 {m['back']}개뿐이다. "
                    f"{LIMITS['back']}개는 다시 만져라 -- 그런데 **똑같이 쓰지 말고 한 단계 "
@@ -351,18 +357,18 @@ def check(text: str, before: dict, after: dict, now: int = 0,
                    f"**구체성은 명사를 꾸미는 것이 아니라 그것이 무엇을 하는가에서 나온다.** "
                    f"연식이 중요하면 누가 그걸 입에 올리게 해라")
 
-    if m["long"] < LIMITS["long"]:
+    if m["long"] < lim["long"]:
         out.append(f"{TALK_LONG}자 넘는 긴 대사가 {m['long']}개다. 적어도 {LIMITS['long']}개는 "
                    f"넣어라 -- 누가 길게 떠들어야 한다. 변명이든 수다든 아무도 안 "
                    f"물어본 내력이든. **대사로 이야기를 진행시켜라.** 상황 설명으로 넘기지 마라")
 
-    if m["long"] and m["bulk"] < LIMITS["bulk"]:
+    if m["long"] and m["bulk"] < lim["bulk"]:
         out.append(f"대사 글자의 {m['bulk']:.0%}만 긴 대사다. {LIMITS['bulk']:.0%}는 넘겨라 -- "
                    f"짧게 받아치는 말만 이어지면 핑퐁이 아니라 딸꾹질이다. **한 사람이 한 번은 "
                    f"길게, 문장을 몇 개씩 이어서, 자기가 자기 말을 고쳐 가며 말해야 한다.** "
                    f"긴 대사 안에서도 점층해라 -- 좁히거나, 키우거나, 뒤집어라")
 
-    if len(old) >= 3 and len(m["grow"]) < LIMITS["grow"]:
+    if len(old) >= 3 and len(m["grow"]) < lim["grow"]:
         seeds = [p for p in cold(before, "", now)][-6:]
         out.append("**앞에서 지어낸 이름 하나를 더 구체적인 것으로 키워라.** 그냥 다시 "
                    "부르는 것은 회수지 점층이 아니다 -- 그 이름을 품은 새 이름이 나와야 한다. "
@@ -372,25 +378,25 @@ def check(text: str, before: dict, after: dict, now: int = 0,
 
     # **닫는 것 없이 열기만 하면 나열이다.** 다만 무르게 본다 -- 미결이 쌓여 있어도
     # 되는 이야기가 있고, 닫는 자리는 사람이 정하는 것이다.
-    if m["owed"] > LIMITS["owed"] and not m["closed"]:
+    if m["owed"] > lim["owed"] and not m["closed"]:
         out.append(f"열린 것이 {m['owed']}개인데 이번에 닫은 것이 없다. "
                    f"{LIMITS['owed']}개를 넘으면 그건 이야기가 아니라 목록이다 -- **하나는 "
                    f"닫아라.** 시원한 답일 필요는 없다. 김빠지는 답도, 틀린 답도, 아무도 "
                    f"확인 못 하는 답도 답이다")
 
     # 회수는 셋인데 하나도 안 쓰였으면, 다시 부르기만 한 것이다.
-    if len(old) >= 4 and m["back"] >= LIMITS["back"] and not m["tool"]:
+    if len(old) >= 4 and m["back"] >= lim["back"] and not m["tool"]:
         out.append("앞엣것을 다시 만지기는 했는데 **쓰지는 않았다.** 하나는 수단이 되게 "
                    "해라 -- 그것으로 무엇을 하거나, 그것 때문에 무엇이 되거나, 그것을 "
                    "주고 무엇을 받거나. 언급은 회수가 아니다")
 
-    if m["rally"] < LIMITS["rally"]:
+    if m["rally"] < lim["rally"]:
         out.append(f"제일 길게 주고받은 대화가 {m['rally']}턴이다. 한 번은 {LIMITS['rally']}턴을 "
                    f"넘겨라 -- **대사와 대사를 붙여 놓아라.** 서술 사이에 한 마디씩 흩어 놓으면 "
                    f"그건 대화가 아니라 인용이다. 한 사람이 물으면 다른 사람이 답하고, 그 답을 "
                    f"받아 또 묻고, 딴소리가 끼고, 그러다 원래 얘기로 돌아온다")
 
-    if m["long"] and m["huge"] < LIMITS["huge"]:
+    if m["long"] and m["huge"] < lim["huge"]:
         out.append(f"{TALK_HUGE}자 넘는 대사가 {m['huge']}개다. 하나는 있어야 한다 -- "
                    f"**한 사람이 자기 얘기에 빠져서 길게 떠드는 대목.** 아무도 안 물어본 "
                    f"내력이든, 변명이든, 틀린 지식이든. 그 안에서 스스로 말을 고치고, "
@@ -404,13 +410,13 @@ def check(text: str, before: dict, after: dict, now: int = 0,
                    f"열 줄짜리가 **같은 장면 안에** 있어야 한다 -- 다 고르면 주고받기가 "
                    f"아니라 낭독이다")
 
-    if m["short"] < LIMITS["short"]:
+    if m["short"] < lim["short"]:
         out.append(f"{TALK_SHORT}자 이하 짧은 대사가 {m['short']}개다. {LIMITS['short']}개는 "
                    f"넘겨라 -- 끊고, 받아치고, 딴소리하는 짧은 말이 긴 대사 사이에 있어야 한다")
 
     # **짧은 것은 받아칠 때만이다.** 아래 둘이 "기본은 길게" 를 지키는 자다 -- bulk 만
     # 두면 긴 대사 하나로 몫을 채우고 나머지를 전부 짧게 써도 통과한다.
-    if m["srun"] > LIMITS["srun"]:
+    if m["srun"] > lim["srun"]:
         out.append(f"짧은 대사가 내리 {m['srun']}번 이어진 자리가 있다. "
                    f"{LIMITS['srun']}번을 넘기지 마라 -- 짧게 받아치는 것은 **앞말에 기대는 "
                    f"한 마디**일 때뿐이고, 그것이 이어지면 주고받기가 아니라 딸꾹질이다")

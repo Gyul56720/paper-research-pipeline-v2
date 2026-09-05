@@ -677,9 +677,10 @@ def _climb(book: dict) -> str:
 def _dialogue(book: dict) -> float:
     """이 덩어리에서 **대사가 차지할 몫.** 절반 언저리를 조준한다 -- 대사가 이야기를
     밀고, 정보는 대사에 녹는다. 고정 하한을 두면 그 하한이 다시 주기가 된다."""
+    lo, hi = GENRE.tune(book.get("genre", ""), "대사",
+                        (rhythm.TALK_LO, rhythm.TALK_HI))
     return rhythm.aim(f"{book.get('seed_id') or book.get('first', '')}|talkshare",
-                      len(book["chunks"]), book.get("seen_dlg", []),
-                      rhythm.TALK_LO, rhythm.TALK_HI)
+                      len(book["chunks"]), book.get("seen_dlg", []), lo, hi)
 
 
 def _telllong(book: dict) -> float:
@@ -1160,7 +1161,8 @@ def step(book: dict, llm, log=None) -> dict:
             + echo.check(text, "".join(book["chunks"])))
     if not book.get("_shock"):
         left += diffusion.check(text, book["ledger"], probe,
-                                now=len(book["chunks"]), want=_talklong(book))
+                                now=len(book["chunks"]), want=_talklong(book),
+                                tune={"자": GENRE.tune(book.get("genre", ""), "자", {})})
     if left:
         _debt(book, len(book["chunks"]), left, path=book.get("_path"))
         # **원고 안에도 남긴다.** 파일은 사람이 보는 것이고, 이것은 다음 덩어리가
