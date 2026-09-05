@@ -129,6 +129,31 @@ ok(genre.tune("job", "자", {}).get("rally", 9) <= 3,
 ok(genre.tune("romance", "자", {}) == {}, "로맨스는 자를 안 건드린다")
 
 print()
+print("[가짓수] **목록이 아니라 곱으로 뽑는다** -- 열두 개짜리 목록은 백 덩어리면 바닥난다")
+print("      ← 그것이 과접합이다. 축을 갈라 곱하면 목록을 안 늘리고도 만 가지가 되고,")
+print("        축이 갈래의 것이라 갈래 밖으로 새지도 않는다.")
+for _g in ("job", "romance"):
+    ok(genre.size(_g) > 5000, f"{_g}: 사건 {genre.size(_g):,}가지")
+    _es = [tuple(genre.event(_g, "씨앗", i).values()) for i in range(200)]
+    ok(len(set(_es)) > 180, f"{_g}: 200 덩어리에 {len(set(_es))}가지가 나온다")
+    ok(not [1 for a, b in zip(_es, _es[1:]) if a == b],
+       f"{_g}: 이웃한 덩어리가 같은 사건을 안 받는다")
+    ok(not [1 for a, b in zip(_es, _es[1:])
+            if sum(x == y for x, y in zip(a, b)) >= 3],
+       f"{_g}: 축 셋 이상이 이웃과 겹치지 않는다  ← 축마다 따로 흔들린다")
+    ok(genre.event(_g, "씨앗", 7) == genre.event(_g, "씨앗", 7),
+       f"{_g}: 같은 씨앗·번호면 같다  ← 이어 쓰기에 재현된다")
+
+_jb = genre.brief("job", "씨", 5)
+ok("이번 대목의 뒤틀림" in _jb, "뒤틀림이 실린다")
+ok("대사로 알리지 말고 **일로**" in _jb,
+   "사건을 일로 벌이게 한다  ← 대사로 알리면 그건 요약이지 사건이 아니다")
+ok("이미 있는 것에 붙여라" in _jb,
+   "이미 있는 것에 붙인다  ← 매번 새 회사를 만들면 이야기가 안 이어진다")
+ok("축은 출발점이지 각본이 아니다" in _jb, "비틀어도 된다고 말해 준다")
+ok(genre.event("", "씨", 1) == {}, "갈래가 없으면 뒤틀림도 없다")
+
+print()
 if _bad:
     print(f"갈래: {len(_bad)}개 실패 -- {_bad}")
     raise SystemExit(1)
